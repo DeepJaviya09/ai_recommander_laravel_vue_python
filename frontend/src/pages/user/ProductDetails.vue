@@ -36,9 +36,9 @@
               <p class="text-gray-600 mb-6 leading-relaxed">{{ product.description }}</p>
 
               <!-- Tags -->
-              <div v-if="product.tags && product.tags.length > 0" class="flex flex-wrap gap-2 mb-6">
+              <div v-if="product.tags && normalizeTags(product.tags).length > 0" class="flex flex-wrap gap-2 mb-6">
                 <span
-                  v-for="tag in product.tags"
+                  v-for="tag in normalizeTags(product.tags)"
                   :key="tag"
                   class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full"
                 >
@@ -51,6 +51,7 @@
             <div class="space-y-4">
               <Button
                 v-if="!isAdmin"
+                type="button"
                 @click="handleBuy"
                 :loading="buying"
                 class="w-full"
@@ -115,18 +116,47 @@ const fetchProduct = async () => {
 }
 
 const handleBuy = async () => {
+  if (buying.value) return // Prevent double click
   buying.value = true
+
   try {
-    await api.post(`/product/${route.params.id}/buy`)
+    const response = await api.post(`/product/${route.params.id}/buy`)
     toast.success('Purchase successful! 🎉')
   } catch (error) {
+    console.error(error)
     toast.error(error.response?.data?.message || 'Purchase failed')
   } finally {
     buying.value = false
   }
 }
 
+const normalizeTags = (tags) => {
+  if (!tags) return []
+
+  if (Array.isArray(tags)) return tags
+
+  if (typeof tags === 'string') {
+    try {
+      // Try to fix malformed JSON
+      const fixed = tags.replace(/'/g, '"')
+      const parsed = JSON.parse(fixed)
+      if (Array.isArray(parsed)) return parsed
+    } catch (e) {
+      // fallback: clean manual splitting
+      return tags
+        .replace(/[\[\]'"]/g, '')
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean)
+    }
+  }
+
+  return []
+}
+
+
 onMounted(() => {
+  console.log('Mounted once');
   fetchProduct()
 })
 </script>
