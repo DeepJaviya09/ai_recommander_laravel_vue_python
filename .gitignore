@@ -1,0 +1,65 @@
+# =========================
+# Global ignores
+# =========================
+.DS_Store
+Thumbs.db
+*.log
+*.env
+.env.*
+node_modules/
+vendor/
+storage/*.key
+*.sqlite
+
+# =========================
+# Laravel (backend/)
+# =========================
+backend/vendor/
+backend/node_modules/
+backend/public/storage
+backend/storage/*.key
+backend/storage/app/public/*
+!backend/storage/app/public/.gitignore
+backend/.env
+backend/.env.*
+backend/bootstrap/cache/*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/composer.lock
+
+# =========================
+# Vue (frontend/)
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/.vite/
+frontend/.nuxt/
+frontend/.output/
+
+# =========================
+# Python AI (ai/)
+# =========================
+ai/__pycache__/
+ai/venv/
+ai/.env
+ai/*.pyc
+ai/models/*.pkl
+ai/data/*.csv
+ai/__init__.py
+ai/.ipynb_checkpoints/
+*.pyc
+
+# =========================
+# System / Editor Files
+# =========================
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*.bak
+*.tmp
