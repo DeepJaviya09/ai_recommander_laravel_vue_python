@@ -1,5 +1,4 @@
-# project/ai/sync_products.py
-
+# sync_products.py
 import json
 import mysql.connector
 from qdrant_client import QdrantClient
@@ -32,27 +31,28 @@ def sync_products():
 
     print(f"Found {len(products)} products")
 
-    # Connect Qdrant
     client = QdrantClient(url=QDRANT_URL)
 
-    # Create collection
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config=qmodels.VectorParams(size=VECTOR_SIZE, distance=qmodels.Distance.COSINE)
+        vectors_config=qmodels.VectorParams(
+            size=VECTOR_SIZE,
+            distance=qmodels.Distance.COSINE
+        )
     )
 
     points = []
 
     for p in products:
-        tags = json.loads(p['tags']) if p['tags'] else []
-        text = f"{p['name']} {p['description']} {p['category_name']} {' '.join(tags)}"
+        tags = json.loads(p["tags"]) if p["tags"] else []
+        combined = f"{p['name']} {p['description']} {p['category_name']} {' '.join(tags)}"
 
-        vector = embed_text(text)
+        vec = embed_text(combined)
 
         points.append(
             qmodels.PointStruct(
-                id=int(p['id']),
-                vector=vector,
+                id=int(p["id"]),
+                vector=vec,
                 payload=p
             )
         )
@@ -61,6 +61,21 @@ def sync_products():
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
     print("✅ Sync completed successfully.")
+
+
+def fetch_product(product_id: int):
+    db = mysql.connector.connect(**DB)
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT p.*, c.name AS category_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = %s
+    """, (product_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    db.close()
+    return result
 
 
 if __name__ == "__main__":

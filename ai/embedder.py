@@ -1,27 +1,28 @@
-import numpy as np
-from transformers import AutoTokenizer, AutoModel
+# embedder.py
 import torch
+from transformers import AutoTokenizer, AutoModel
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
+print("🔥 Loading MiniLM model (fast + lightweight)...")
+
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModel.from_pretrained(MODEL_NAME)
+model.eval()
 
-if torch.cuda.is_available():
-    model.to("cuda")
+print("✅ MiniLM loaded successfully!")
 
-def mean_pooling(model_output, attention_mask):
-    token_embeddings = model_output[0]
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
-def embed_text(text):
-    encoded = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    if torch.cuda.is_available():
-        encoded = {k: v.to("cuda") for k, v in encoded.items()}
+def embed_text(text: str):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+
     with torch.no_grad():
-        model_output = model(**encoded)
-    pooled = mean_pooling(model_output, encoded["attention_mask"])
-    vec = pooled[0].cpu().numpy()
-    vec = vec / (np.linalg.norm(vec) + 1e-12)
-    return vec.tolist()
+        model_output = model(**inputs)
+
+    # Mean Pooling (standard for MiniLM)
+    embeddings = model_output.last_hidden_state.mean(dim=1)
+
+    # Normalize the embeddings
+    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+
+    return embeddings[0].numpy()
