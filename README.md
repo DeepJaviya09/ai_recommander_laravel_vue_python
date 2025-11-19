@@ -1,28 +1,39 @@
 # 🧠 AI Product Recommender System
 
-A full-stack AI-powered product recommendation platform built with:
-- **Laravel (Backend + Sanctum Auth)**
-- **Vue.js (Frontend)**
-- **Python (AI Recommendation Engine)**
+A full-stack, AI-powered recommendation engine built using:
+
+- **Laravel** – Backend API + Admin Panel  
+- **Vue 3** – Frontend UI  
+- **Python FastAPI** – Vector AI engine  
+- **Qdrant** – Local vector database  
+- **BGE-base-en-v1.5** – State-of-the-art embedding model  
+
+Provides Amazon-style **semantic product recommendations** using text embeddings.
 
 ---
 
-## 🚀 Project Structure
+## 📁 Project Structure
 
 ai_recommander/
 │
-├── backend/ → Laravel API + Cron + Sanctum Auth
-├── frontend/ → Vue.js 3 + Tailwind UI
-└── ai/ → Python ML engine (TF-IDF + Collaborative filtering)
-
-yaml
-Copy code
+├── backend/ # Laravel API + Admin
+├── frontend/ # Vue 3 Frontend
+└── ai/ # Python AI Engine
+├── service.py # FastAPI server
+├── embedder.py # Embeddings (BGE)
+├── recommend.py # Recommendation logic
+├── sync_products.py # Sync products → Qdrant
+├── requirements.txt
+└── .env
 
 ---
 
-## ⚙️ Setup Instructions
+# ⚙️ Installation & Setup
 
-## 1️⃣ Backend (Laravel)
+---
+
+## 1️⃣ Backend Setup (Laravel)
+
 ```bash
 cd backend
 cp .env.example .env
@@ -36,7 +47,7 @@ Optional: Import Excel product data
 php artisan products:import-excel
 ```
 
-2️⃣ Frontend (Vue)
+## 2️⃣ Frontend (Vue)
 ```bash
 cd frontend
 cp .env.example .env
@@ -44,14 +55,61 @@ npm install
 npm run dev
 ```
 
-3️⃣ AI (Python)
+## 3️⃣ AI Engine Setup (Python + FastAPI + Qdrant)
+# ▶ Create virtual environment
 ```bash
 cd ai
 python -m venv venv
-venv/Scripts/activate  # or source venv/bin/activate
-pip install -r requirements.txt
-python train_model.py
+venv/Scripts/activate   # Windows
+# or: source venv/bin/activate  # Mac/Linux
 ```
+
+# ▶ Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+## 4️⃣ Start Qdrant Vector Database
+# Option A — Docker (recommended)
+```bash
+docker run -p 6333:6333 qdrant/qdrant
+```
+
+
+# Option B — Windows Binary
+Download from:  
+https://qdrant.tech/documentation/install/  
+Run:  
+```bash
+qdrant.exe
+```
+
+## 5️⃣ Start the Python FastAPI Server
+```bash
+cd ai
+venv/Scripts/activate
+uvicorn service:app --port 8001
+```
+
+## 🔄 Syncing Products Into Qdrant
+```bash
+POST http://127.0.0.1:8001/sync
+
+GET http://127.0.0.1:8001/recommend/product/{id}?limit=10
+```
+
+## 🧰 Useful Commands
+
+| Task                | Command                                 |
+| ------------------- | --------------------------------------- |
+| Run Laravel backend | `php artisan serve`                     |
+| Run Vue frontend    | `npm run dev`                           |
+| Start AI server     | `uvicorn service:app --port 8001`       |
+| Start Qdrant        | `docker run -p 6333:6333 qdrant/qdrant` |
+| Sync vectors        | `POST /sync`                            |
+| Get recommendations | `GET /recommend/product/{id}`           |
+
+
 🔁 Workflow
 
 - Users register/login through frontend.

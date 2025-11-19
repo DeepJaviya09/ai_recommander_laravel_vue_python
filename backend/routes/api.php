@@ -30,6 +30,7 @@ Route::get('/products', [ProductController::class, 'index']);
 // GET /api/products/{id}
 // Example: /api/products/1
 Route::get('/products/{id}', [ProductController::class, 'show']);
+Route::get('/all-products', [ProductController::class, 'allProducts']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // POST /api/logout
@@ -53,7 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // POST /api/admin/sync-model
         // Sample payload:
         // {}
-        Route::post('/admin/sync-model', [AdminController::class, 'syncModel']);
+        // Route::post('/admin/sync-model', [AdminController::class, 'syncModel']);
+        // Route::post('/admin/sync-products', [AdminController::class, 'syncProducts']);
+        Route::post('/admin/sync-model', [AdminController::class, 'syncProducts']);
 
         // Admin Product Management Routes
         // GET /api/admin/products - List all products (with pagination, search, filter)

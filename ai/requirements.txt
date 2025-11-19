@@ -2,3 +2,19 @@ pandas
 numpy
 scikit-learn
 mysql-connector-python
+
+fastapi
+uvicorn[standard]
+
+qdrant-client==1.8.2
+
+transformers>=4.39
+torch
+accelerate
+
+sentence-transformers   # Needed because BGE models use it internally
+
+langchain
+langchain-community
+
+python-dotenv

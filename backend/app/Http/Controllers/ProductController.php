@@ -7,6 +7,12 @@ use App\Models\Product;
 
 class ProductController extends Controller
 {
+
+    public function allProducts()
+    {
+        return Product::with('category')->get();
+    }
+    
     public function index(Request $request)
     {
         $query = Product::with('category');
