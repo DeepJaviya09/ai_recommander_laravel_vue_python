@@ -4,6 +4,9 @@
       <div class="text-center mb-12">
         <h1 class="text-4xl font-bold text-gray-800 mb-4">✨ Personalized Recommendations</h1>
         <p class="text-gray-500 text-lg">Products tailored just for you</p>
+        <p v-if="recommendationScore" class="text-sm text-gray-400 mt-2">
+          AI Match Score: {{ recommendationScore }}%
+        </p>
       </div>
 
       <!-- Loading State -->
@@ -40,33 +43,71 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import api from '@/services/api'
+import { useUserStore } from '@/store/userStore'
 import ProductCard from '@/components/ProductCard.vue'
 import Button from '@/components/ui/Button.vue'
 
 const router = useRouter()
 const toast = useToast()
+const userStore = useUserStore()
 
 const recommendations = ref([])
 const loading = ref(false)
+const recommendationScore = ref(null)
 
 const fetchRecommendations = async () => {
   loading.value = true
   try {
-    const response = await api.get('/recommendations')
+    // Get current user ID
+    const userId = userStore.user?.id
+    
+    if (!userId) {
+      toast.error('Please log in to see recommendations')
+      router.push('/login')
+      return
+    }
 
-    // ✅ Adjusted for new backend response:
-    // It returns { user_id, recommended_products: [...] }
-    if (response.data && Array.isArray(response.data.recommended_products)) {
-      recommendations.value = response.data.recommended_products
+    // Call the new AI-powered recommendation endpoint
+    const response = await api.get(`/recommend/user/${userId}`, {
+      params: { limit: 12 } // Request 12 recommendations
+    })
+
+    // ✅ Handle AI recommendation response format:
+    // { user_id, source: "user-profile", recommendations: [{ id, score, payload }, ...] }
+    if (response.data && Array.isArray(response.data.recommendations)) {
+      // Extract payload from each recommendation (payload contains full product data)
+      recommendations.value = response.data.recommendations.map(rec => ({
+        ...rec.payload, // Spread the product data from payload
+        recommendation_score: rec.score // Optionally include the score
+      }))
+      
+      // Show average score if available
+      if (recommendations.value.length > 0) {
+        const avgScore = response.data.recommendations.reduce((sum, r) => sum + r.score, 0) / response.data.recommendations.length
+        recommendationScore.value = (avgScore * 100).toFixed(1)
+      }
+    } else if (response.data?.message) {
+      // Handle case where user has no activity
+      recommendations.value = []
+      toast.info(response.data.message)
     } else {
       recommendations.value = []
     }
 
   } catch (error) {
     console.error('Failed to fetch recommendations', error)
-    if (error.response?.status !== 404) {
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      toast.error('Please log in to see recommendations')
+      router.push('/login')
+    } else if (error.response?.status === 503) {
+      toast.error('AI recommendation service is temporarily unavailable')
+    } else if (error.response?.status !== 404) {
       toast.error('Failed to load recommendations')
     }
+    
+    recommendations.value = []
   } finally {
     loading.value = false
   }

@@ -78,5 +78,39 @@ def fetch_product(product_id: int):
     return result
 
 
+def fetch_products_batch(product_ids: list):
+    """
+    Fetch multiple products by IDs in a single query (optimization).
+    
+    Args:
+        product_ids: List of product IDs
+        
+    Returns:
+        Dictionary mapping product_id -> product data
+    """
+    if not product_ids:
+        return {}
+    
+    db = mysql.connector.connect(**DB)
+    cursor = db.cursor(dictionary=True)
+    
+    # Build IN clause with placeholders
+    placeholders = ','.join(['%s'] * len(product_ids))
+    query = f"""
+        SELECT p.*, c.name AS category_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id IN ({placeholders})
+    """
+    
+    cursor.execute(query, tuple(product_ids))
+    results = cursor.fetchall()
+    cursor.close()
+    db.close()
+    
+    # Return as dictionary for easy lookup
+    return {product['id']: product for product in results}
+
+
 if __name__ == "__main__":
     sync_products()

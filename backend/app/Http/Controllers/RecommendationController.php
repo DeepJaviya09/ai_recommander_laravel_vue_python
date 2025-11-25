@@ -56,4 +56,77 @@ class RecommendationController extends Controller
         ]);
     }
 
+    /**
+     * Get AI-powered personalized recommendations for a user
+     * Calls the Python FastAPI service
+     * 
+     * @param Request $request
+     * @param int $id User ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function recommendForUser(Request $request, $id)
+    {
+        // Validate user access (users can only get their own recommendations, or admin can get any)
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if user is requesting their own recommendations or is admin
+        if ($user->id != $id && $user->role !== 'admin') {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        $limit = $request->query('limit', 10);
+        $aiServiceUrl = env('AI_SERVICE_URL', 'http://127.0.0.1:8001');
+        
+        try {
+            // Call Python AI service
+            $url = "{$aiServiceUrl}/recommend/user/{$id}?limit={$limit}";
+            
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                return response()->json([
+                    'error' => 'AI service connection failed',
+                    'message' => $curlError
+                ], 503);
+            }
+
+            if ($httpCode !== 200) {
+                return response()->json([
+                    'error' => 'AI service error',
+                    'http_code' => $httpCode,
+                    'response' => $response
+                ], 503);
+            }
+
+            $data = json_decode($response, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'error' => 'Invalid response from AI service',
+                    'response' => $response
+                ], 500);
+            }
+
+            return response()->json($data);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to fetch recommendations',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

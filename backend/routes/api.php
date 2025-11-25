@@ -49,6 +49,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // GET /api/recommendations
     Route::get('/recommendations', [RecommendationController::class, 'index']);
+    // GET /api/recommend/user/{id} - Get AI-powered personalized recommendations
+    // Example: /api/recommend/user/7?limit=10
+    Route::get('/recommend/user/{id}', [RecommendationController::class, 'recommendForUser']);
 
     Route::middleware('admin')->group(function () {
         // POST /api/admin/sync-model
